@@ -17,7 +17,11 @@
       <itemPath>Makefile</itemPath>
     </logicalFolder>
     <itemPath>project_information.txt</itemPath>
+    <itemPath>C:/Users/xy/Desktop/circuit.PNG</itemPath>
   </logicalFolder>
+  <sourceRootList>
+    <Elem>C:/Users/xy/Desktop</Elem>
+  </sourceRootList>
   <projectmakefile>Makefile</projectmakefile>
   <confs>
     <conf name="XC8_PIC12F609" type="2">
