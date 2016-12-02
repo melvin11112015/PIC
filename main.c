@@ -91,8 +91,11 @@ void InitApp(void) {
 
     T1GCONbits.TMR1GE = 1;
     T1GCONbits.T1GSS = 0; // source - PIN T1G
-    T1GCONbits.T1GTM = 1; //???
-    T1GCONbits.T1GSPM = 1; //??
+    
+    //configure T1GCON register to measure period
+    T1GCONbits.T1GTM = 1; //Enable toggle mode
+    T1GCONbits.T1GSPM = 1; //Enable single-pulse mode
+    
     T1GCONbits.T1GPOL = 1;
 
     INTCONbits.GIE = 1; //Enable interrupt
@@ -106,7 +109,7 @@ void main(void) {
     InitApp();
 
     T1CONbits.TMR1ON = 1; //enable TMR1
-    T1GCONbits.T1GGO = 0; //
+    T1GCONbits.T1GGO = 0; //start pulse acquisition
 
     SIGNAL_OUTPUT = 0;
 
@@ -117,26 +120,34 @@ void main(void) {
         //Data2PWM(TMR1);
         //debug-----
 
+        //waiting for an edge
         if (T1GCONbits.T1GVAL == 0) {
             if (flag == 1) {
+                //acquire value of period
                 period_x = temp;
-                T1GCONbits.T1GTM = 0; //???
-                T1GCONbits.T1GSPM = 1; //??
-                PIR1bits.TMR1GIF = 0;
+                
+                //configure T1GCON register to measure Duty+
+                T1GCONbits.T1GTM = 0; //Disable toggle mode
+                T1GCONbits.T1GSPM = 1; //Enable single-pulse mode
+                PIR1bits.TMR1GIF = 0;//clear flag
                 TMR1 = 0;
             } else if (flag >= 2) {
                 dutyx10 = 0;
+                //acquire value of pulse
                 measuredPulse = temp;
-                T1GCONbits.T1GTM = 1; //???
-                T1GCONbits.T1GSPM = 1; //??
-                PIR1bits.TMR1GIF = 0;
+                
+                //configure T1GCON register to measure period
+                T1GCONbits.T1GTM = 1; ///Enable toggle mode
+                T1GCONbits.T1GSPM = 1; //Enable single-pulse mode
+                PIR1bits.TMR1GIF = 0;//clear flag
                 TMR1 = 0;
-                flag = 0;
+                flag = 0;//clear flag
             }
-            T1GCONbits.T1GGO = 1;
+            T1GCONbits.T1GGO = 1;//start pulse acquisition
             flag++;
         }
 
+        //calculate the duty
         if (measuredPulse < period_x) {
             dutyx10 = ((float) measuredPulse / (float) period_x)*1000;
         } else if (PORTAbits.RA4 == 1) {
@@ -187,14 +198,14 @@ void main(void) {
 
 void interrupt isr(void) {
     if (PIR1bits.TMR1IF == 1) {
-
+        //TMR1 overflowed
         if (T1GCONbits.T1GGO_nDONE == 1)
             t1ov_cnt++;
         else
             t1ov_cnt = 0;
         PIR1bits.TMR1IF = 0; //clear flag
     } else if (PIR1bits.TMR1GIF == 1) {
-
+        //single-pulse acquisition has completed
         temp = t1ov_cnt;
         temp <<= 16;
         temp += TMR1;
